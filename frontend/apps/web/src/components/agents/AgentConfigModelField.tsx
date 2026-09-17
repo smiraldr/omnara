@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Field, RequiredFieldLabel } from '@/components/ui/field'
 import { createResourceCombobox } from '@/components/ui/resource-combobox'
 import { ResourceNameFieldError } from '@/components/ui/resource-name-error'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useCompleteInfiniteQueryItems } from '@/hooks/use-complete-infinite-query-items'
 import { useInfiniteQueryItems } from '@/hooks/use-infinite-query-items'
 import { exactNameGlob, useTypeaheadSearch } from '@/hooks/use-resource-list'
@@ -21,18 +22,23 @@ interface ModelChoice extends ConfiguredModelSummary {
 const ModelCombobox = createResourceCombobox<ModelChoice>({
   itemKey: (model) => model.id,
   itemLabel: (model) => `${model.name} · ${model.provider_config}`,
-  renderItem: (model) => (
-    <span className="flex min-w-0 flex-1 items-baseline gap-1.5">
-      <span className="truncate">{model.name}</span>
-      <span className="text-muted-foreground truncate text-xs">{model.provider_config}</span>
-      {model.pricing && (
-        <ModelPricingSummary
-          className="text-muted-foreground ml-auto shrink-0 text-xs tabular-nums"
-          pricing={model.pricing}
-        />
-      )}
-    </span>
-  ),
+  renderItem: (model) => {
+    const row = (
+      <span className="flex min-w-0 flex-1 items-baseline gap-1.5">
+        <span className="truncate">{model.name}</span>
+        <span className="text-muted-foreground truncate text-xs">{model.provider_config}</span>
+      </span>
+    )
+    if (!model.pricing) return row
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>{row}</TooltipTrigger>
+        <TooltipContent side="right" className="tabular-nums">
+          <ModelPricingSummary pricing={model.pricing} /> per 1M tokens
+        </TooltipContent>
+      </Tooltip>
+    )
+  },
   placeholder: 'Search granted models…',
   emptyMessage: 'No granted models found.',
 })

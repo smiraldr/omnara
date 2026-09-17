@@ -50,7 +50,7 @@ import {
   cacheAgentInputBacklog,
   useAgentInputBacklog,
 } from './agent-input-backlog'
-import { openAgentInteractionsQueryKey } from './agent-interactions'
+import { invalidateSubagentList, openAgentInteractionsQueryKey } from './agent-interactions'
 import { agentUsageQueryPredicate } from './usage'
 
 export type { OmnaraUIMessage } from './agent-chat-messages'
@@ -347,6 +347,7 @@ export class AgentChatSession {
     if (hasToolCalls(event) || event.event_kind === 'tool_result' || isControlEvent(event)) {
       this.invalidateInteractions()
     }
+    invalidateSubagentList(this.queryClient, this.client, this.scope, event, this.events)
     this.notify()
   }
 

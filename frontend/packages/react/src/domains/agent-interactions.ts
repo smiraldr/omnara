@@ -1,13 +1,19 @@
-import { type ListAgentInteractionsResponse, type OmnaraClient, sdk } from '@omnara/sdk'
+import {
+  type AgentEvent,
+  type ListAgentInteractionsResponse,
+  type OmnaraClient,
+  sdk,
+} from '@omnara/sdk'
 import {
   getAgentQueryKey,
   listAgentInteractionsOptions,
   listAgentInteractionsQueryKey,
   listAgentsQueryKey,
 } from '@omnara/sdk/tanstack'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { type QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { useOmnaraClient } from '../omnara-client'
+import type { AgentChatScope } from './agent-chat-types'
 import { agentInputBacklogQueryKey } from './agent-input-backlog'
 
 const openInteractionsQuery = { state: 'open', limit: 100, include_subagents: true } as const
@@ -105,5 +111,36 @@ export function useCancelAgent(orgID: string, projectID: string, agentID: string
         }),
       ])
     },
+  })
+}
+
+function spawnsSubagent(event: AgentEvent, events: AgentEvent[]): boolean {
+  if (event.event_kind !== 'tool_result') return false
+  return events.some(
+    (candidate) =>
+      candidate.event_kind === 'model_output' &&
+      candidate.content_blocks.some(
+        (block) =>
+          block.type === 'tool_call' &&
+          block.tool_call_id === event.tool_call_id &&
+          block.name === 'spawn_agent',
+      ),
+  )
+}
+
+export function invalidateSubagentList(
+  queryClient: QueryClient,
+  client: OmnaraClient,
+  scope: AgentChatScope,
+  event: AgentEvent,
+  events: AgentEvent[],
+): void {
+  const subagentInput = event.event_kind === 'agent_input' && event.agent_id !== scope.agentID
+  if (!subagentInput && !spawnsSubagent(event, events)) return
+  void queryClient.invalidateQueries({
+    queryKey: listAgentsQueryKey({
+      path: { orgID: scope.orgID, projectID: scope.projectID },
+      client,
+    }),
   })
 }

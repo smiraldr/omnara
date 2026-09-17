@@ -1,6 +1,7 @@
 import { AgentEventStreamError } from '@omnara/sdk'
 import { QueryClient } from '@tanstack/react-query'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { z } from 'zod'
 
 import {
   chatTransport,
@@ -525,6 +526,52 @@ describe('AgentChatSession streaming', () => {
       expect(invalidate).toHaveBeenCalledTimes(4)
     })
     expect(invalidate.mock.calls.some(([filters]) => filters?.predicate !== undefined)).toBe(true)
+    session.disconnect()
+  })
+
+  it('invalidates the agent list once a spawn completes or a subagent sends input', async () => {
+    const queryClient = new QueryClient()
+    const invalidate = vi.spyOn(queryClient, 'invalidateQueries').mockResolvedValue()
+    const session = startSession([], client(), queryClient)
+    const stream = await connection(0)
+    const queryKeyEntry = z.object({ _id: z.string() })
+    const agentListCalls = () =>
+      invalidate.mock.calls.filter(
+        ([filters]) => queryKeyEntry.safeParse(filters?.queryKey?.[0]).data?._id === 'listAgents',
+      )
+
+    stream.push({ event: 'agent_input', data: userInputEvent() })
+    stream.push({
+      event: 'model_output',
+      data: event({
+        sequence: 12,
+        content_blocks: [toolCallBlock(), { ...toolCallBlock('spawn'), name: 'spawn_agent' }],
+      }),
+    })
+    stream.push({
+      event: 'tool_result',
+      data: toolResultEvent({ sequence: 13, tool_call_id: 'call', content_blocks: [] }),
+    })
+    await vi.waitFor(() => {
+      expect(invalidate).toHaveBeenCalledTimes(3)
+    })
+    expect(agentListCalls()).toHaveLength(0)
+
+    stream.push({
+      event: 'tool_result',
+      data: toolResultEvent({ sequence: 14, tool_call_id: 'spawn', content_blocks: [] }),
+    })
+    await vi.waitFor(() => {
+      expect(agentListCalls()).toHaveLength(1)
+    })
+
+    stream.push({
+      event: 'agent_input',
+      data: userInputEvent({ id: 'child-input', agent_id: 'child', sequence: 15 }),
+    })
+    await vi.waitFor(() => {
+      expect(agentListCalls()).toHaveLength(2)
+    })
     session.disconnect()
   })
 
