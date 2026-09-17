@@ -224,7 +224,8 @@ type discoveredModelEntry struct {
 	CreatedAt   string `json:"created_at"`   // Anthropic (RFC 3339)
 
 	// Context window, one concept: OpenRouter reports context_length,
-	// Anthropic reports max_input_tokens.
+	// Anthropic reports max_input_tokens, io.net reports context_window.
+	ContextWindow  json.RawMessage `json:"context_window"`
 	ContextLength  json.RawMessage `json:"context_length"`
 	MaxInputTokens json.RawMessage `json:"max_input_tokens"`
 
@@ -293,7 +294,7 @@ func usdPerMillionFromPerToken(raw json.RawMessage) (string, bool) {
 }
 
 func (e discoveredModelEntry) contextWindowTokens() *int {
-	for _, raw := range []json.RawMessage{e.ContextLength, e.MaxInputTokens} {
+	for _, raw := range []json.RawMessage{e.ContextWindow, e.ContextLength, e.MaxInputTokens} {
 		if value := modelTokenCount(raw); value != nil && *value >= 2 {
 			return value
 		}
@@ -354,6 +355,12 @@ func (e discoveredModelEntry) supportsTextAndTools() bool {
 	}
 	slug := strings.ToLower(e.ID)
 	for _, marker := range nonChatModelMarkers {
+		// HF-style ids (org/name) legitimately use the -instruct suffix, e.g.
+		// meta-llama/Llama-3.3-70B-Instruct on io.net; the marker targets
+		// legacy OpenAI completion models like gpt-3.5-turbo-instruct.
+		if marker == "-instruct" && strings.Contains(e.ID, "/") {
+			continue
+		}
 		if strings.Contains(slug, marker) {
 			return false
 		}

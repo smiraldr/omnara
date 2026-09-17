@@ -266,6 +266,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          IONET_API_KEY: ${{ secrets.IONET_API_KEY }}
           BL_API_KEY: ${{ secrets.BL_API_KEY }}
           BL_WORKSPACE: ${{ secrets.BL_WORKSPACE }}
           DAYTONA_API_KEY: ${{ secrets.DAYTONA_API_KEY }}
@@ -291,6 +292,13 @@ jobs:
             echo "ANTHROPIC_API_KEY is not configured; skipping live Anthropic tests."
           else
             echo "anthropic=true" >> "$GITHUB_OUTPUT"
+            configured=true
+          fi
+          if [ -z "$IONET_API_KEY" ]; then
+            echo "ionet=false" >> "$GITHUB_OUTPUT"
+            echo "IONET_API_KEY is not configured; skipping live IO Intelligence tests."
+          else
+            echo "ionet=true" >> "$GITHUB_OUTPUT"
             configured=true
           fi
           if { [ -n "$BL_API_KEY" ] && [ -n "$BL_WORKSPACE" ]; } || \
@@ -343,6 +351,11 @@ jobs:
         if: steps.secrets.outputs.anthropic == 'true'
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+      - run: make test-live-ionet
+        if: steps.secrets.outputs.ionet == 'true'
+        env:
+          IONET_API_KEY: ${{ secrets.IONET_API_KEY }}
 
       - run: make test-live-api-format-switching
         if: steps.secrets.outputs.openai == 'true' && steps.secrets.outputs.openrouter == 'true' && steps.secrets.outputs.anthropic == 'true'

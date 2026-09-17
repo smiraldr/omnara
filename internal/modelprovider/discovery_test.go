@@ -93,6 +93,48 @@ func TestDiscoverModelsOpenAIBearer(t *testing.T) {
 	}
 }
 
+func TestDiscoverModelsIONetStyleIDsAndContextWindow(t *testing.T) {
+	t.Parallel()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"data":[
+			{"id":"meta-llama/Llama-3.3-70B-Instruct","created":300,
+			 "context_window":131072,"max_tokens":8192},
+			{"id":"Qwen/Qwen3-Next-80B-A3B-Instruct","created":200,
+			 "context_window":262144},
+			{"id":"deepseek-ai/DeepSeek-V3.1","created":100,
+			 "context_window":163840,"max_tokens":32768},
+			{"id":"gpt-3.5-turbo-instruct","created":400},
+			{"id":"openai/whisper-1","created":400}
+		]}`))
+	}))
+	defer server.Close()
+
+	config := discoveryProviderConfig(
+		server.URL,
+		modelprotocol.APIFormatOpenAIChatCompletions,
+		modelstore.ModelProviderAuthKindBearerToken,
+		`{}`,
+	)
+	models, err := DiscoverModels(context.Background(), config, "sk", true)
+	if err != nil {
+		t.Fatalf("DiscoverModels: %v", err)
+	}
+	if len(models) != 3 || models[0].Slug != "meta-llama/Llama-3.3-70B-Instruct" ||
+		models[1].Slug != "Qwen/Qwen3-Next-80B-A3B-Instruct" ||
+		models[2].Slug != "deepseek-ai/DeepSeek-V3.1" {
+		t.Fatalf("io.net style models = %+v", models)
+	}
+	if models[0].ContextWindowTokens == nil || *models[0].ContextWindowTokens != 131072 {
+		t.Fatalf("context_window was not parsed: %+v", models[0])
+	}
+	if models[0].MaxOutputTokens == nil || *models[0].MaxOutputTokens != 8192 {
+		t.Fatalf("max_tokens was not parsed: %+v", models[0])
+	}
+	if models[1].ContextWindowTokens == nil || *models[1].ContextWindowTokens != 262144 {
+		t.Fatalf("context_window fallback missing: %+v", models[1])
+	}
+}
+
 func TestBedrockDiscoveryValidatesSharedCatalogWithoutReturningModels(t *testing.T) {
 	t.Parallel()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
