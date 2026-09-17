@@ -36,9 +36,13 @@ func TestLiveIONetChatCompletionsText(t *testing.T) {
 	if apiKey == "" {
 		t.Fatal("IONET_API_KEY is required for live IO Intelligence Chat Completions test")
 	}
+	baseURL := strings.TrimSpace(os.Getenv("IONET_BASE_URL"))
+	if baseURL == "" {
+		baseURL = "https://api.intelligence.io.solutions/api/v1"
+	}
 	runLiveChatCompletionsText(t, Client{
 		Auth:              route.BearerToken{Token: apiKey},
-		BaseURL:           "https://api.intelligence.io.solutions/api/v1",
+		BaseURL:           baseURL,
 		EndpointPath:      modelstore.DefaultModelProviderEndpointPath(modelprotocol.APIFormatOpenAIChatCompletions),
 		ProviderModelSlug: "meta-llama/Llama-3.3-70B-Instruct",
 	}, model.RequestPolicy{MaxOutputTokens: 64, CacheRetention: model.CacheRetentionLong})
