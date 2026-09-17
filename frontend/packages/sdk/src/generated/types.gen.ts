@@ -157,7 +157,7 @@ export type ModelCacheRetention = 'none' | 'short' | 'long';
  */
 export type CreateModelProviderConfigRequest = {
     name: ResourceName;
-    preset?: 'openai' | 'openrouter' | 'anthropic';
+    preset?: 'openai' | 'openrouter' | 'anthropic' | 'ionet';
     api_format?: ModelApiFormat;
     api_variant?: ModelProviderApiVariant;
     /**

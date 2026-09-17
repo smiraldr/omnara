@@ -27,6 +27,10 @@ describe('createModelProviderFormValid', () => {
     )
     expect(createModelProviderFormValid({ ...custom, provider: 'openai' })).toBe(true)
   })
+
+  it('accepts the IO Intelligence preset without a custom base URL', () => {
+    expect(createModelProviderFormValid({ ...custom, provider: 'ionet' })).toBe(true)
+  })
 })
 
 describe('configuredModelRequestForDiscoveredModel', () => {

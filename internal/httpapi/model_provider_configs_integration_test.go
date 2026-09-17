@@ -81,6 +81,23 @@ func TestModelProviderConfigRoutesBackAgentConfigCompilation(t *testing.T) {
 		openRouterConfig["auth_kind"] != "bearer_token" {
 		t.Fatalf("preset did not materialize OpenRouter provider config: %+v", openRouterConfig)
 	}
+	ionetConfig := createdModelProviderConfig(t, requestJSONWithHeaders(
+		t,
+		handler,
+		http.MethodPost,
+		"/api/v1/orgs/"+project.OrgID+"/model-provider-configs",
+		`{"name":"ionet-secondary","preset":"ionet","credential_secret_id":"`+secretID+`"}`,
+		"",
+		http.StatusCreated,
+		authHeaders(project.AdminToken),
+	))
+	if ionetConfig["api_format"] != "openai-chat-completions" ||
+		ionetConfig["api_variant"] != "default" ||
+		ionetConfig["base_url"] != "https://api.intelligence.io.solutions/api/v1" ||
+		ionetConfig["endpoint_path"] != "/chat/completions" ||
+		ionetConfig["auth_kind"] != "bearer_token" {
+		t.Fatalf("preset did not materialize IO Intelligence provider config: %+v", ionetConfig)
+	}
 	requestJSONWithHeaders(
 		t,
 		handler,

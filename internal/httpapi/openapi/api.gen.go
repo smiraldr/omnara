@@ -460,6 +460,7 @@ func (e CreateAgentInputDeliveryMode) Valid() bool {
 // Defines values for CreateModelProviderConfigRequestPreset.
 const (
 	CreateModelProviderConfigRequestPresetAnthropic  CreateModelProviderConfigRequestPreset = "anthropic"
+	CreateModelProviderConfigRequestPresetIonet      CreateModelProviderConfigRequestPreset = "ionet"
 	CreateModelProviderConfigRequestPresetOpenai     CreateModelProviderConfigRequestPreset = "openai"
 	CreateModelProviderConfigRequestPresetOpenrouter CreateModelProviderConfigRequestPreset = "openrouter"
 )
@@ -468,6 +469,8 @@ const (
 func (e CreateModelProviderConfigRequestPreset) Valid() bool {
 	switch e {
 	case CreateModelProviderConfigRequestPresetAnthropic:
+		return true
+	case CreateModelProviderConfigRequestPresetIonet:
 		return true
 	case CreateModelProviderConfigRequestPresetOpenai:
 		return true

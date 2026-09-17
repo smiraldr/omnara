@@ -7370,7 +7370,7 @@ components:
           $ref: '#/components/schemas/ResourceName'
         preset:
           type: string
-          enum: [openai, openrouter, anthropic]
+          enum: [openai, openrouter, anthropic, ionet]
         api_format:
           $ref: '#/components/schemas/ModelAPIFormat'
         api_variant:

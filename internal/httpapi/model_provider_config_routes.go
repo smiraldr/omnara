@@ -1221,6 +1221,13 @@ func applyModelProviderPreset(
 		*endpointPath = modelstore.DefaultModelProviderEndpointPath(*apiFormat)
 		*authKind = modelstore.DefaultModelProviderAuthKind(*apiFormat)
 		*authOptions = modelstore.DefaultModelProviderAuthOptions(*apiFormat, *authKind)
+	case "ionet":
+		*apiFormat = modelprotocol.APIFormatOpenAIChatCompletions
+		*apiVariant = modelprotocol.APIVariantDefault
+		*baseURL = "https://api.intelligence.io.solutions/api/v1"
+		*endpointPath = modelstore.DefaultModelProviderEndpointPath(*apiFormat)
+		*authKind = modelstore.DefaultModelProviderAuthKind(*apiFormat)
+		*authOptions = modelstore.DefaultModelProviderAuthOptions(*apiFormat, *authKind)
 	default:
 		return errors.New("unsupported model provider preset")
 	}

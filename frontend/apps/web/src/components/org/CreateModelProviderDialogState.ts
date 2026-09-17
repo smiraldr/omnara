@@ -15,6 +15,7 @@ export const modelProviderOptions = [
   { value: 'openai', label: 'OpenAI', keyPlaceholder: 'sk-…' },
   { value: 'openrouter', label: 'OpenRouter', keyPlaceholder: 'sk-or-v1-…' },
   { value: 'anthropic', label: 'Anthropic', keyPlaceholder: 'sk-ant-…' },
+  { value: 'ionet', label: 'IO Intelligence', keyPlaceholder: 'API key' },
   { value: 'bedrock', label: 'Amazon Bedrock', keyPlaceholder: 'Bedrock API key' },
   { value: 'custom', label: 'Custom endpoint', keyPlaceholder: 'API key' },
 ] as const
