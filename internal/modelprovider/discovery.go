@@ -238,7 +238,10 @@ type discoveredModelEntry struct {
 	Architecture *struct {
 		OutputModalities []string `json:"output_modalities"`
 	} `json:"architecture"`
-	Pricing *struct {
+	// io.net reports capability metadata at the top level.
+	OutputModalities []string `json:"output_modalities"`
+	SupportsTools    *bool    `json:"supports_tools"`
+	Pricing          *struct {
 		Prompt          json.RawMessage `json:"prompt"`
 		Completion      json.RawMessage `json:"completion"`
 		InputCacheRead  json.RawMessage `json:"input_cache_read"`
@@ -353,6 +356,16 @@ func (e discoveredModelEntry) supportsTextAndTools() bool {
 		}
 		return slices.Contains(e.SupportedParameters, "tools")
 	}
+	// io.net reports output modalities and tool support at the top level.
+	if len(e.OutputModalities) > 0 || e.SupportsTools != nil {
+		if len(e.OutputModalities) > 0 && !slices.Contains(e.OutputModalities, "text") {
+			return false
+		}
+		if e.SupportsTools != nil {
+			return *e.SupportsTools
+		}
+		return true
+	}
 	slug := strings.ToLower(e.ID)
 	for _, marker := range nonChatModelMarkers {
 		// HF-style ids (org/name) legitimately use the -instruct suffix, e.g.
@@ -397,11 +410,16 @@ func providerErrorMessage(body []byte) string {
 		Error struct {
 			Message string `json:"message"`
 		} `json:"error"`
+		// FastAPI-style errors, e.g. io.net's {"detail":"Invalid API Key"}.
+		Detail string `json:"detail"`
 	}
 	if err := json.Unmarshal(body, &decoded); err != nil {
 		return ""
 	}
 	message := strings.TrimSpace(decoded.Error.Message)
+	if message == "" {
+		message = strings.TrimSpace(decoded.Detail)
+	}
 	const maxMessageLength = 200
 	if len(message) > maxMessageLength {
 		message = message[:maxMessageLength]

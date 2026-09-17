@@ -48,6 +48,9 @@ func classifyHTTPError(
 	message := strings.TrimSpace(string(body))
 	var envelope chatProviderErrorEnvelope
 	if err := json.Unmarshal(body, &envelope); err == nil {
+		if envelope.Error.Message == "" {
+			envelope.Error.Message = strings.TrimSpace(envelope.Detail)
+		}
 		if envelope.Error.Message != "" {
 			message = envelope.Error.Message
 		}
@@ -130,6 +133,9 @@ func classifyProviderError(
 
 type chatProviderErrorEnvelope struct {
 	Error chatProviderError `json:"error"`
+	// FastAPI-style errors, e.g. io.net's {"detail":"Invalid API Key"},
+	// carry the message in detail instead of error.message.
+	Detail string `json:"detail"`
 }
 
 type chatProviderError struct {

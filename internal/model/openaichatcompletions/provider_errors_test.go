@@ -82,6 +82,27 @@ func TestRespondClassifiesProviderErrors(t *testing.T) {
 	}
 }
 
+func TestRespondClassifiesFastAPIDetailErrors(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = w.Write([]byte(`{"detail":"Invalid API Key"}`))
+	}))
+	defer server.Close()
+	_, err := testRespondClient(server).Respond(
+		context.Background(),
+		model.Request{ProviderRequest: json.RawMessage(`{"model":"gpt-test"}`)},
+	)
+	var providerErr model.ProviderError
+	if !errors.As(err, &providerErr) {
+		t.Fatalf("error = %T %v, want model.ProviderError", err, err)
+	}
+	if providerErr.Kind != model.ErrorKindAuth ||
+		providerErr.StatusCode != http.StatusUnauthorized ||
+		providerErr.Message != "Invalid API Key" {
+		t.Fatalf("unexpected provider error: %+v", providerErr)
+	}
+}
+
 func TestRespondUnavailableStatusBeatsQuotaProse(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusServiceUnavailable)

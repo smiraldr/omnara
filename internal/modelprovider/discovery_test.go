@@ -104,7 +104,11 @@ func TestDiscoverModelsIONetStyleIDsAndContextWindow(t *testing.T) {
 			{"id":"deepseek-ai/DeepSeek-V3.1","created":100,
 			 "context_window":163840,"max_tokens":32768},
 			{"id":"gpt-3.5-turbo-instruct","created":400},
-			{"id":"openai/whisper-1","created":400}
+			{"id":"openai/whisper-1","created":400},
+			{"id":"meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8","created":500,
+			 "context_window":1048576,"output_modalities":["text"],"supports_tools":false},
+			{"id":"org/Vision-Model","created":50,
+			 "context_window":8192,"output_modalities":["image"],"supports_tools":true}
 		]}`))
 	}))
 	defer server.Close()
@@ -132,6 +136,16 @@ func TestDiscoverModelsIONetStyleIDsAndContextWindow(t *testing.T) {
 	}
 	if models[1].ContextWindowTokens == nil || *models[1].ContextWindowTokens != 262144 {
 		t.Fatalf("context_window fallback missing: %+v", models[1])
+	}
+}
+
+func TestDiscoveryProviderErrorMessageShapes(t *testing.T) {
+	t.Parallel()
+	if got := providerErrorMessage([]byte(`{"detail":"Invalid API Key"}`)); got != "Invalid API Key" {
+		t.Fatalf("detail message = %q", got)
+	}
+	if got := providerErrorMessage([]byte(`{"error":{"message":"invalid api key"}}`)); got != "invalid api key" {
+		t.Fatalf("error.message = %q", got)
 	}
 }
 
