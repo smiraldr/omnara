@@ -18,6 +18,7 @@ import {
   emptyBasicConfig,
   useAgentBuilderForm,
 } from '@/components/agents/useAgentBuilderForm'
+import { useUnsavedChangesWarning } from '@/hooks/use-unsaved-changes-warning'
 
 export function useAgentDraft(
   catalog: ToolCatalog | undefined,
@@ -30,15 +31,17 @@ export function useAgentDraft(
     initialAgentConfigModeState('builder'),
   )
   const [restored] = useState(takeMcpBuilderOAuthRestore)
-  const [name, setName] = useState(restored?.agentName ?? initialTemplate?.name ?? '')
   const [session, setSession] = useState(() => createBasicConfigSession(''))
-  const form = useAgentBuilderForm(
-    session,
-    restored?.draft ??
-      (initialTemplate
-        ? agentTemplateBasicConfig(initialTemplate, catalog, defaultPool, defaultModel)
-        : { ...emptyBasicConfig, tools: defaultAgentTools(catalog) }),
-  )
+  const [initial] = useState(() => {
+    const draft = initialTemplate
+      ? agentTemplateBasicConfig(initialTemplate, catalog, defaultPool, defaultModel)
+      : { ...emptyBasicConfig, tools: defaultAgentTools(catalog) }
+    return { name: initialTemplate?.name ?? '', draft, yaml: session.apply(draft) }
+  })
+  const [name, setName] = useState(restored?.agentName ?? initial.name)
+  const form = useAgentBuilderForm(session, restored?.draft ?? initial.draft)
+  const dirty = name !== initial.name || (mode.editorYaml ?? form.yaml) !== initial.yaml
+  useUnsavedChangesWarning(dirty)
   const switchMode = (nextMode: AgentConfigMode) => {
     if (nextMode === 'builder' && mode.editorYaml !== null) {
       const adopted = createBasicConfigSession(mode.editorYaml)
