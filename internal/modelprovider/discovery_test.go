@@ -98,7 +98,8 @@ func TestDiscoverModelsIONetStyleIDsAndContextWindow(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte(`{"data":[
 			{"id":"meta-llama/Llama-3.3-70B-Instruct","created":300,
-			 "context_window":131072,"max_tokens":8192},
+			 "context_window":131072,"max_tokens":8192,
+			 "input_token_price":3.09e-07,"output_token_price":1.236e-06,"cache_read_token_price":1.545e-07},
 			{"id":"Qwen/Qwen3-Next-80B-A3B-Instruct","created":200,
 			 "context_window":262144},
 			{"id":"deepseek-ai/DeepSeek-V3.1","created":100,
@@ -136,6 +137,13 @@ func TestDiscoverModelsIONetStyleIDsAndContextWindow(t *testing.T) {
 	}
 	if models[1].ContextWindowTokens == nil || *models[1].ContextWindowTokens != 262144 {
 		t.Fatalf("context_window fallback missing: %+v", models[1])
+	}
+	if models[0].Pricing == nil ||
+		models[0].Pricing.InputUSDPerMillion != "0.309" ||
+		models[0].Pricing.OutputUSDPerMillion != "1.236" ||
+		models[0].Pricing.CacheReadInputUSDPerMillion != "0.1545" ||
+		models[0].Pricing.CacheWriteInputUSDPerMillion != "" {
+		t.Fatalf("top-level io.net pricing not parsed: %+v", models[0].Pricing)
 	}
 }
 

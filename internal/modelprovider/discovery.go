@@ -247,7 +247,11 @@ type discoveredModelEntry struct {
 		InputCacheRead  json.RawMessage `json:"input_cache_read"`
 		InputCacheWrite json.RawMessage `json:"input_cache_write"`
 	} `json:"pricing"`
-	SupportedParameters []string `json:"supported_parameters"`
+	// io.net reports per-token prices at the top level.
+	InputTokenPrice     json.RawMessage `json:"input_token_price"`
+	OutputTokenPrice    json.RawMessage `json:"output_token_price"`
+	CacheReadTokenPrice json.RawMessage `json:"cache_read_token_price"`
+	SupportedParameters []string        `json:"supported_parameters"`
 	TopProvider         *struct {
 		ContextLength       json.RawMessage `json:"context_length"`
 		MaxCompletionTokens json.RawMessage `json:"max_completion_tokens"`
@@ -255,16 +259,22 @@ type discoveredModelEntry struct {
 }
 
 func (e discoveredModelEntry) pricing() *DiscoveredModelPricing {
-	if e.Pricing == nil {
-		return nil
+	var prompt, completion, inputCacheRead, inputCacheWrite json.RawMessage
+	if e.Pricing != nil {
+		prompt, completion = e.Pricing.Prompt, e.Pricing.Completion
+		inputCacheRead, inputCacheWrite = e.Pricing.InputCacheRead, e.Pricing.InputCacheWrite
+	} else {
+		// io.net reports per-token prices at the top level.
+		prompt, completion = e.InputTokenPrice, e.OutputTokenPrice
+		inputCacheRead = e.CacheReadTokenPrice
 	}
-	input, inputOK := usdPerMillionFromPerToken(e.Pricing.Prompt)
-	output, outputOK := usdPerMillionFromPerToken(e.Pricing.Completion)
+	input, inputOK := usdPerMillionFromPerToken(prompt)
+	output, outputOK := usdPerMillionFromPerToken(completion)
 	if !inputOK || !outputOK {
 		return nil
 	}
-	cacheRead, _ := usdPerMillionFromPerToken(e.Pricing.InputCacheRead)
-	cacheWrite, _ := usdPerMillionFromPerToken(e.Pricing.InputCacheWrite)
+	cacheRead, _ := usdPerMillionFromPerToken(inputCacheRead)
+	cacheWrite, _ := usdPerMillionFromPerToken(inputCacheWrite)
 	return &DiscoveredModelPricing{
 		InputUSDPerMillion:           input,
 		CacheReadInputUSDPerMillion:  cacheRead,
