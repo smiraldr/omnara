@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/omnara-ai/omnara/internal/model/anthropicmessages"
+	"github.com/omnara-ai/omnara/internal/model/providererrors"
 	"github.com/omnara-ai/omnara/internal/model/route"
 	"github.com/omnara-ai/omnara/internal/modelprotocol"
 	"github.com/omnara-ai/omnara/internal/outboundhttp"
@@ -421,14 +422,17 @@ func providerErrorMessage(body []byte) string {
 			Message string `json:"message"`
 		} `json:"error"`
 		// FastAPI-style errors, e.g. io.net's {"detail":"Invalid API Key"}.
-		Detail string `json:"detail"`
+		// FastAPI also renders validation failures (HTTP 422) as an array of
+		// objects, so keep the raw value and extract a message with
+		// providererrors.DetailMessage.
+		Detail json.RawMessage `json:"detail"`
 	}
 	if err := json.Unmarshal(body, &decoded); err != nil {
 		return ""
 	}
 	message := strings.TrimSpace(decoded.Error.Message)
 	if message == "" {
-		message = strings.TrimSpace(decoded.Detail)
+		message = providererrors.DetailMessage(decoded.Detail)
 	}
 	const maxMessageLength = 200
 	if len(message) > maxMessageLength {

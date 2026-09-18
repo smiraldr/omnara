@@ -499,7 +499,7 @@ test-live-sandbox-providers:
 		./internal/machinepool/providers/unikraft \
 		-run '^Test(Blaxel|Daytona|Modal|Unikraft)ProviderLiveSmoke$$'
 
-test-live: test-live-web test-live-openai-responses test-live-openai-chat-completions test-live-openrouter test-live-anthropic test-live-api-format-switching test-live-sandbox-providers
+test-live: test-live-web test-live-openai-responses test-live-openai-chat-completions test-live-ionet test-live-openrouter test-live-anthropic test-live-api-format-switching test-live-sandbox-providers
 
 # Black-box API suite against a deployed control plane.
 # The -timeout must stay comfortably above the suite's worst-case waits (~9m of

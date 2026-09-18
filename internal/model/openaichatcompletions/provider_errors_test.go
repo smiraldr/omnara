@@ -103,6 +103,29 @@ func TestRespondClassifiesFastAPIDetailErrors(t *testing.T) {
 	}
 }
 
+func TestRespondClassifiesFastAPIValidationDetailErrors(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		_, _ = w.Write([]byte(`{"detail":[
+			{"type":"missing","loc":["body","messages"],"msg":"Field required"},
+			{"type":"string_type","loc":["body","model"],"msg":"Input should be a valid string"}
+		]}`))
+	}))
+	defer server.Close()
+	_, err := testRespondClient(server).Respond(
+		context.Background(),
+		model.Request{ProviderRequest: json.RawMessage(`{"model":"gpt-test"}`)},
+	)
+	var providerErr model.ProviderError
+	if !errors.As(err, &providerErr) {
+		t.Fatalf("error = %T %v, want model.ProviderError", err, err)
+	}
+	if providerErr.StatusCode != http.StatusUnprocessableEntity ||
+		providerErr.Message != "Field required; Input should be a valid string" {
+		t.Fatalf("unexpected provider error: %+v", providerErr)
+	}
+}
+
 func TestRespondUnavailableStatusBeatsQuotaProse(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusServiceUnavailable)

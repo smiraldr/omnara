@@ -155,6 +155,21 @@ func TestDiscoveryProviderErrorMessageShapes(t *testing.T) {
 	if got := providerErrorMessage([]byte(`{"error":{"message":"invalid api key"}}`)); got != "invalid api key" {
 		t.Fatalf("error.message = %q", got)
 	}
+	// FastAPI validation failures (HTTP 422) carry detail as an array.
+	if got := providerErrorMessage([]byte(`{"detail":[
+		{"type":"missing","loc":["body","messages"],"msg":"Field required"}
+	]}`)); got != "Field required" {
+		t.Fatalf("detail array message = %q", got)
+	}
+	if got := providerErrorMessage([]byte(`{"detail":[
+		{"msg":"Field required"},
+		{"msg":"Input should be a valid string"}
+	]}`)); got != "Field required; Input should be a valid string" {
+		t.Fatalf("detail array joined message = %q", got)
+	}
+	if got := providerErrorMessage([]byte(`{"detail":[{"loc":["body"]}]}`)); got != "" {
+		t.Fatalf("detail array without messages = %q", got)
+	}
 }
 
 func TestBedrockDiscoveryValidatesSharedCatalogWithoutReturningModels(t *testing.T) {

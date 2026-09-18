@@ -49,7 +49,7 @@ func classifyHTTPError(
 	var envelope chatProviderErrorEnvelope
 	if err := json.Unmarshal(body, &envelope); err == nil {
 		if envelope.Error.Message == "" {
-			envelope.Error.Message = strings.TrimSpace(envelope.Detail)
+			envelope.Error.Message = providererrors.DetailMessage(envelope.Detail)
 		}
 		if envelope.Error.Message != "" {
 			message = envelope.Error.Message
@@ -133,9 +133,11 @@ func classifyProviderError(
 
 type chatProviderErrorEnvelope struct {
 	Error chatProviderError `json:"error"`
-	// FastAPI-style errors, e.g. io.net's {"detail":"Invalid API Key"},
-	// carry the message in detail instead of error.message.
-	Detail string `json:"detail"`
+	// FastAPI-style errors, e.g. io.net's {"detail":"Invalid API Key"}, carry
+	// the message in detail instead of error.message. FastAPI also renders
+	// validation failures (HTTP 422) as an array of objects, so keep the raw
+	// value and extract a message with providererrors.DetailMessage.
+	Detail json.RawMessage `json:"detail"`
 }
 
 type chatProviderError struct {
