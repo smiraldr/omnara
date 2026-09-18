@@ -14,6 +14,7 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/omnara-ai/omnara/internal/model/anthropicmessages"
 	"github.com/omnara-ai/omnara/internal/model/providererrors"
@@ -368,6 +369,9 @@ func (e discoveredModelEntry) supportsTextAndTools() bool {
 		return slices.Contains(e.SupportedParameters, "tools")
 	}
 	// io.net reports output modalities and tool support at the top level.
+	// Tool support must be declared explicitly, mirroring the OpenRouter
+	// branch above: output_modalities alone does not make a model
+	// tool-capable.
 	if len(e.OutputModalities) > 0 || e.SupportsTools != nil {
 		if len(e.OutputModalities) > 0 && !slices.Contains(e.OutputModalities, "text") {
 			return false
@@ -375,7 +379,7 @@ func (e discoveredModelEntry) supportsTextAndTools() bool {
 		if e.SupportsTools != nil {
 			return *e.SupportsTools
 		}
-		return true
+		return false
 	}
 	slug := strings.ToLower(e.ID)
 	for _, marker := range nonChatModelMarkers {
@@ -436,7 +440,13 @@ func providerErrorMessage(body []byte) string {
 	}
 	const maxMessageLength = 200
 	if len(message) > maxMessageLength {
-		message = message[:maxMessageLength]
+		// Cut back to a rune boundary so the truncated message stays valid
+		// UTF-8 when the cap lands mid-rune.
+		cut := maxMessageLength
+		for cut > 0 && !utf8.RuneStart(message[cut]) {
+			cut--
+		}
+		message = message[:cut]
 	}
 	return message
 }

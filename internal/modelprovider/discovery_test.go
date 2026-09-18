@@ -109,7 +109,9 @@ func TestDiscoverModelsIONetStyleIDsAndContextWindow(t *testing.T) {
 			{"id":"meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8","created":500,
 			 "context_window":1048576,"output_modalities":["text"],"supports_tools":false},
 			{"id":"org/Vision-Model","created":50,
-			 "context_window":8192,"output_modalities":["image"],"supports_tools":true}
+			 "context_window":8192,"output_modalities":["image"],"supports_tools":true},
+			{"id":"org/No-Tool-Flag","created":600,
+			 "context_window":8192,"output_modalities":["text"]}
 		]}`))
 	}))
 	defer server.Close()
@@ -169,6 +171,14 @@ func TestDiscoveryProviderErrorMessageShapes(t *testing.T) {
 	}
 	if got := providerErrorMessage([]byte(`{"detail":[{"loc":["body"]}]}`)); got != "" {
 		t.Fatalf("detail array without messages = %q", got)
+	}
+	// Truncation lands on a rune boundary, so the message stays valid UTF-8.
+	long := strings.Repeat("x", 199) + "é" + strings.Repeat("y", 50)
+	if got := providerErrorMessage([]byte(`{"error":{"message":"` + long + `"}}`)); got != strings.Repeat("x", 199) {
+		t.Fatalf("truncated message = %q (len %d)", got, len(got))
+	}
+	if got := providerErrorMessage([]byte(`{"error":{"message":"` + strings.Repeat("é", 100) + `"}}`)); len(got) != 200 {
+		t.Fatalf("rune-aligned message length = %d, want 200", len(got))
 	}
 }
 
